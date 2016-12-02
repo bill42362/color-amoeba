@@ -12,6 +12,12 @@ if(window.MersenneTwister) {
     Core.random = function() { return Core.mersenneTwister.random_long(); }
 }
 
+Core.getDistance = function(a, b) {
+    let distanceX = b.x - a.x;
+    let distanceY = b.y - a.y;
+    return Math.sqrt(distanceX*distanceX + distanceY*distanceY);
+}
+
 Core.getCookieByName = function(name) {
 	var cookieValue = null;
 	if (document.cookie && document.cookie != '') {

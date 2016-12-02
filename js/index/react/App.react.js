@@ -10,17 +10,20 @@ class App extends React.Component {
         super(props);
         this.staticStrings = { };
         this.state = {
-            points: [], eatingPoints: [],
+            points: [], pullingPoints: [],
             amoeba: {
                 position: {x: -1, y: -1},
-                size: 80, eatingSize: 160,
-                color: {red: 250, green: 250, blue: 250, alpha: 1},
+                size: 80, eatingSize: 200,
+                color: {red: 128, green: 128, blue: 128, alpha: 1},
             },
             mousePosition: {x: -1, y: -1},
+            lastBreedTimestamp: Date.now(),
             lastUpdateTimestamp: Date.now(),
         };
         this.frequency = 10;
-        this.maxPoints = 100;
+        this.maxPoints = 200;
+        this.breedTime = 200;
+        this.maxBreedTryingTime = 20;
         this.timeloop = this.timeloop.bind(this);
         this.nextStep = this.nextStep.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
@@ -33,23 +36,6 @@ class App extends React.Component {
         this.setState({mousePosition: mouseState.axis, amoeba: amoeba, lastUpdateTimestamp: Date.now()});
         this.nextStep();
     }
-    renewPoints(points = []) {
-        let baseSize = {width: this.refs.base.clientWidth, height: this.refs.base.clientHeight};
-        while(this.maxPoints > points.length) {
-            points.push({
-                position: {x: baseSize.width*Math.random()*2, y: baseSize.height*Math.random()*2},
-                size: 10,
-                color: {
-                    red: Math.floor(Math.random()*255),
-                    green: Math.floor(Math.random()*255),
-                    blue: Math.floor(Math.random()*255),
-                    alpha: 1,
-                },
-                birthTimestamp: Date.now(),
-            });
-        }
-        return points;
-    }
     resizePoints(points = []) {
         let now = Date.now();
         return points.map(point => {
@@ -59,32 +45,105 @@ class App extends React.Component {
             return point;
         });
     }
-    getEatingResult(points = []) {
+    huntPoints(points = []) {
         let amoeba = this.state.amoeba;
-        let eatingPoints = [];
+        let huntedPoints = [];
         let leftPoints = points.filter(point => {
-            let xDistance = point.position.x - amoeba.position.x;
-            let yDistance = point.position.y - amoeba.position.y;
-            let distance = Math.sqrt(xDistance*xDistance + yDistance*yDistance);
+            let distance = Core.getDistance(point.position, amoeba.position);
             if(amoeba.eatingSize >= distance) {
                 point.birthTimestamp = Date.now();
-                eatingPoints.push(point);
+                huntedPoints.push(point);
             }
             return amoeba.eatingSize < distance;
         });
-        return {points: leftPoints, eatingPoints: eatingPoints};
+        return {freePoints: leftPoints, huntedPoints: huntedPoints};
+    }
+    getNewPoint() {
+        let baseSize = {width: this.refs.base.clientWidth, height: this.refs.base.clientHeight};
+        return {
+            position: {x: baseSize.width*Math.random()*2, y: baseSize.height*Math.random()*2},
+            size: 10,
+            color: {
+                red: Math.floor(Math.random()*255),
+                green: Math.floor(Math.random()*255),
+                blue: Math.floor(Math.random()*255),
+                alpha: 1,
+            },
+            birthTimestamp: Date.now(),
+        };
+    }
+    pullPoints(points = []) {
+        let amoeba = this.state.amoeba;
+        let now = Date.now();
+        return points.map(point => {
+            point.position = {
+                x: 0.1*amoeba.position.x + 0.9*point.position.x,
+                y: 0.1*amoeba.position.y + 0.9*point.position.y,
+            };
+            return point;
+        });
+    }
+    swalloPullingPoints(points = []) {
+        let amoeba = this.state.amoeba;
+        let pullingPoints = [], swalloedPoints = [];
+        points.forEach(point => {
+            if(Core.getDistance(amoeba.position, point.position) <= amoeba.size - point.size) {
+                swalloedPoints.push(point);
+            } else { pullingPoints.push(point); }
+        });
+        return {pullingPoints: pullingPoints, swalloedPoints: swalloedPoints};
+    }
+    digestSwalloedPoints(points = []) {
+        let amoeba = this.state.amoeba;
+        let amoebaColor = amoeba.color;
+        points.forEach(point => {
+            let pointColor = point.color;
+            amoebaColor.red += 0.1*(pointColor.red - amoebaColor.red);
+            amoebaColor.green += 0.1*(pointColor.green - amoebaColor.green);
+            amoebaColor.blue += 0.1*(pointColor.blue - amoebaColor.blue);
+        });
+        amoeba.color = amoebaColor;
+        return amoeba;
     }
     nextStep() {
         let state = this.state;
         let now = Date.now();
         let timeStep = now - state.lastUpdateTimestamp;
         let resizedPoints = this.resizePoints(this.state.points);
-        let eatingResult = this.getEatingResult(resizedPoints);
-        let points = this.renewPoints(eatingResult.points.concat());
+        let huntingResult = this.huntPoints(resizedPoints);
+        let pullingPoints = this.pullPoints(this.state.pullingPoints);
+        let swallowResult = this.swalloPullingPoints(pullingPoints);
+        this.digestSwalloedPoints(swallowResult.swalloedPoints);
+        let points = huntingResult.freePoints;
+        let lastBreedTimestamp = state.lastBreedTimestamp;
+        let breedTryingTime = 0;
+        if(this.maxPoints > points.length && this.breedTime < (now - lastBreedTimestamp)) {
+            let amoeba = this.state.amoeba;
+            let newPoint = undefined;
+            while(!newPoint && this.maxBreedTryingTime > breedTryingTime) {
+                newPoint = this.getNewPoint();
+                // New point must outside of eating range.
+                while(amoeba.eatingSize + 20 > Core.getDistance(amoeba.position, newPoint.position)) {
+                    newPoint = this.getNewPoint();
+                }
+                // Cancel if new point too close to other points.
+                let pointsPin = 0;
+                while(newPoint && pointsPin < points.length) {
+                    if(2*amoeba.eatingSize > Core.getDistance(newPoint.position, points[pointsPin].position)) {
+                        newPoint = undefined;
+                    }
+                    ++pointsPin;
+                }
+                ++breedTryingTime;
+            }
+            if(newPoint) { points.push(newPoint); }
+            lastBreedTimestamp = now;
+        }
         this.setState({
             points: points,
-            eatingPoints: eatingResult.eatingPoints,
-            lastUpdateTimestamp: now
+            pullingPoints: swallowResult.pullingPoints.concat(huntingResult.huntedPoints),
+            lastUpdateTimestamp: now,
+            lastBreedTimestamp: lastBreedTimestamp,
         });
     }
     timeloop() {
@@ -93,15 +152,14 @@ class App extends React.Component {
         let timeToLastUpdate = now - this.state.lastUpdateTimestamp;
         if(maxTimeToLastUpdate < timeToLastUpdate) { this.nextStep(); }
     }
-    componentDidMount() {
-        this.setState({points: this.renewPoints()});
-        window.setInterval(this.timeloop, 10);
-    }
+    componentDidMount() { window.setInterval(this.timeloop, 10); }
     componentWillUnmount() { }
     render() {
         let state = this.state;
         return <div id='wrapper' ref='base'>
-            <ColorAmoeba points={this.state.points.concat([this.state.amoeba])} />
+            <ColorAmoeba
+                points={this.state.points.concat([this.state.amoeba]).concat(this.state.pullingPoints)}
+            />
             <MouseTracker
                 ref='mouseTracker'
                 onMouseMove={this.onMouseMove}
