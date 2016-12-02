@@ -1,0 +1,16 @@
+{
+  "name": "color-amoeba",
+  "version": "1.0.0",
+  "description": "A color ball eating color balls.",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "color",
+    "amoeba",
+    "canvas"
+  ],
+  "author": "Pi-Yin Hsiao",
+  "license": "ISC"
+}
