@@ -13,7 +13,6 @@ class ColorAmoeba extends React.Component {
         this.context.clearRect(0, 0, canvas.width, canvas.height);
     }
     drawCircle(center, opt_radius, opt_style) {
-        console.log('drawCircle() center:', center);
         const ctx = this.context;
         let radius = opt_radius || 4;
         let tempFillStyle = ctx.fillStyle;
