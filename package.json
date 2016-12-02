@@ -12,5 +12,45 @@
     "canvas"
   ],
   "author": "Pi-Yin Hsiao",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-react": "^6.16.0",
+    "babelify": "^7.3.0",
+    "browserify": "^13.1.1",
+    "browserify-shim": "^3.8.12",
+    "classnames": "^2.2.5",
+    "express": "^4.14.0",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-cssnano": "^2.1.2",
+    "gulp-imagemin": "^3.1.1",
+    "gulp-less": "^3.3.0",
+    "gulp-uglify": "^2.0.0",
+    "gulp-util": "^3.0.7",
+    "imagemin-pngquant": "^5.0.0",
+    "mersenne-twister": "^1.1.0",
+    "react": "^15.4.1",
+    "react-dom": "^15.4.1",
+    "toastr": "^2.1.2",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.7.0"
+  },
+  "dependencies": {
+    "debug": "^2.3.3",
+    "fs": "0.0.1-security",
+    "hapi": "^16.0.1",
+    "http": "0.0.0",
+    "inert": "^4.0.3"
+  },
+  "browserify-shim": {
+    "react": "global:React",
+    "react-dom": "global:ReactDOM",
+    "jquery": "global:$",
+    "classnames": "global:ClassNames",
+    "react-tinymce": "global:TinyMCE",
+    "react-telephone-input": "global:ReactTelephoneInput",
+    "mersenne-twister": "global:MersenneTwister"
+  }
 }
