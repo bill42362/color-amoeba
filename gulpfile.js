@@ -253,8 +253,7 @@ gulp.task('css-lib', function() {
     var shouldUglify = (-1 != process.argv.indexOf('-u'));
 
     var tempBundle = gulp.src([
-        './node_modules/bootstrap/dist/css/bootstrap.css',
-        './node_modules/font-awesome/css/font-awesome.css',
+        './css/lib/normalize.css',
         './node_modules/toastr/build/toastr.css',
     ])
     .pipe(concat('lib.css'));
