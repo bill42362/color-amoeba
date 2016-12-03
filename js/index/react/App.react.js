@@ -98,9 +98,9 @@ class App extends React.Component {
         let amoebaColor = amoeba.color;
         points.forEach(point => {
             let pointColor = point.color;
-            amoebaColor.red += 0.1*(pointColor.red - amoebaColor.red);
-            amoebaColor.green += 0.1*(pointColor.green - amoebaColor.green);
-            amoebaColor.blue += 0.1*(pointColor.blue - amoebaColor.blue);
+            amoebaColor.red += 0.3*(pointColor.red - amoebaColor.red);
+            amoebaColor.green += 0.3*(pointColor.green - amoebaColor.green);
+            amoebaColor.blue += 0.3*(pointColor.blue - amoebaColor.blue);
         });
         amoeba.color = amoebaColor;
         return amoeba;
@@ -111,7 +111,7 @@ class App extends React.Component {
         let timeStep = now - state.lastUpdateTimestamp;
         let resizedPoints = this.resizePoints(this.state.points);
         let huntingResult = this.huntPoints(resizedPoints);
-        let pullingPoints = this.pullPoints(this.state.pullingPoints);
+        let pullingPoints = this.resizePoints(this.pullPoints(this.state.pullingPoints));
         let swallowResult = this.swalloPullingPoints(pullingPoints);
         this.digestSwalloedPoints(swallowResult.swalloedPoints);
         let points = huntingResult.freePoints;
@@ -158,7 +158,9 @@ class App extends React.Component {
         let state = this.state;
         return <div id='wrapper' ref='base'>
             <ColorAmoeba
-                points={this.state.points.concat([this.state.amoeba]).concat(this.state.pullingPoints)}
+                amoeba={this.state.amoeba}
+                points={this.state.points}
+                pullingPoints={this.state.pullingPoints}
             />
             <MouseTracker
                 ref='mouseTracker'
