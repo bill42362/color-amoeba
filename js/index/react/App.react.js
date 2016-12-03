@@ -20,10 +20,10 @@ class App extends React.Component {
             lastBreedTimestamp: Date.now(),
             lastUpdateTimestamp: Date.now(),
         };
-        this.frequency = 10;
+        this.frequency = 60;
         this.maxPoints = 200;
-        this.breedTime = 200;
-        this.maxBreedTryingTime = 20;
+        this.breedTime = 500;
+        this.maxBreedTryingTime = 10;
         this.timeloop = this.timeloop.bind(this);
         this.nextStep = this.nextStep.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
@@ -77,8 +77,8 @@ class App extends React.Component {
         let now = Date.now();
         return points.map(point => {
             point.position = {
-                x: 0.1*amoeba.position.x + 0.9*point.position.x,
-                y: 0.1*amoeba.position.y + 0.9*point.position.y,
+                x: 0.05*amoeba.position.x + 0.95*point.position.x,
+                y: 0.05*amoeba.position.y + 0.95*point.position.y,
             };
             return point;
         });
@@ -87,7 +87,7 @@ class App extends React.Component {
         let amoeba = this.state.amoeba;
         let pullingPoints = [], swalloedPoints = [];
         points.forEach(point => {
-            if(Core.getDistance(amoeba.position, point.position) <= amoeba.size - point.size) {
+            if(Core.getDistance(amoeba.position, point.position) <= amoeba.size + point.size) {
                 swalloedPoints.push(point);
             } else { pullingPoints.push(point); }
         });
