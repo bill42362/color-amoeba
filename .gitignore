@@ -1,0 +1,8 @@
+*backup*
+*.DS_Store
+*.log
+node_modules/
+fonts/
+img/
+dist/
+*.swp
