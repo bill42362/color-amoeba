@@ -31,6 +31,20 @@ class App extends React.Component {
         this.nextStep = this.nextStep.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onMouseUp = this.onMouseUp.bind(this);
+        this.onTouchMove = this.onTouchMove.bind(this);
+    }
+    onTouchMove(e) {
+        e.preventDefault();
+        let mouseState = this.refs.mouseTracker.state;
+        let mouseAxis = {x: e.nativeEvent.layerX*2, y: e.nativeEvent.layerY*2};
+        let amoeba = this.state.amoeba;
+        amoeba.position = mouseAxis;
+        this.setState({
+            mousePosition: mouseAxis, amoeba: amoeba,
+            lastUpdateTimestamp: Date.now(),
+        });
+        this.nextStep();
+        return false;
     }
     onMouseUp() {
         let mouseState = this.refs.mouseTracker.state;
@@ -173,13 +187,15 @@ class App extends React.Component {
         let timeToLastUpdate = now - this.state.lastUpdateTimestamp;
         if(maxTimeToLastUpdate < timeToLastUpdate) { this.nextStep(); }
     }
+    onWindowScroll(e) { e.preventDefault(); return false; }
     componentDidMount() {
         window.setInterval(this.timeloop, 10);
+        document.addEventListener('scroll', this.onWindowScroll, false);
         let amoeba = this.state.amoeba;
         amoeba.position = {x: this.refs.base.clientWidth, y: this.refs.base.clientHeight};
         this.setState({amoeba: amoeba});
     }
-    componentWillUnmount() { }
+    componentWillUnmount() { document.removeEventListener('scroll', this.onWindowScroll, false); }
     render() {
         let state = this.state;
         return <div
@@ -195,6 +211,7 @@ class App extends React.Component {
                 ref='mouseTracker'
                 onMouseMove={this.onMouseMove}
                 onMouseUp={this.onMouseUp}
+                onTouchMove={this.onTouchMove}
             />
         </div>;
     }

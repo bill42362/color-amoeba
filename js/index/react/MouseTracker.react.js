@@ -38,7 +38,6 @@ class MouseTracker extends React.Component {
     }
     onContextMenu(e) { e.preventDefault(); return false; }
     onMouseDown(e) {
-        e.preventDefault();
         const state = this.state;
         state.prev = this.getPrevState();
         if(0 === e.button) { state.key.left = true; }
@@ -50,7 +49,6 @@ class MouseTracker extends React.Component {
         this.setState(state);
     }
     onMouseUp(e) {
-        e.preventDefault();
         const state = this.state;
         state.prev = this.getPrevState();
         if(0 === e.button) { state.key.left = false; }
@@ -86,6 +84,7 @@ class MouseTracker extends React.Component {
             onMouseUp={this.onMouseUp}
             onMouseDown={this.onMouseDown}
             onContextMenu={this.onContextMenu}
+            onTouchMove={this.props.onTouchMove}
         ></div>;
     }
 }
