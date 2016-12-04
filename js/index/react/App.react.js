@@ -24,6 +24,7 @@ class App extends React.Component {
         this.maxPoints = 200;
         this.breedTime = 500;
         this.maxBreedTryingTime = 10;
+        this.maxPullingTime = 1000;
         this.timeloop = this.timeloop.bind(this);
         this.nextStep = this.nextStep.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
@@ -52,6 +53,7 @@ class App extends React.Component {
             let distance = Core.getDistance(point.position, amoeba.position);
             if(amoeba.eatingSize >= distance) {
                 point.birthTimestamp = Date.now();
+                point.originPosition = point.position;
                 huntedPoints.push(point);
             }
             return amoeba.eatingSize < distance;
@@ -75,10 +77,13 @@ class App extends React.Component {
     pullPoints(points = []) {
         let amoeba = this.state.amoeba;
         let now = Date.now();
+        let maxPullingTime = this.maxPullingTime;
         return points.map(point => {
+            let pullingDuration = now - point.birthTimestamp;
+            let pullingRatio = 0.1*Math.sqrt(Math.min(100*pullingDuration/maxPullingTime, 100));
             point.position = {
-                x: 0.05*amoeba.position.x + 0.95*point.position.x,
-                y: 0.05*amoeba.position.y + 0.95*point.position.y,
+                x: pullingRatio*amoeba.position.x + (1 - pullingRatio)*point.originPosition.x,
+                y: pullingRatio*amoeba.position.y + (1 - pullingRatio)*point.originPosition.y,
             };
             return point;
         });
