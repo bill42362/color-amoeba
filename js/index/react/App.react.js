@@ -13,6 +13,7 @@ class App extends React.Component {
             startFeeding: false, amoebaHovering: false,
             points: [], pullingPoints: [],
             amoeba: {
+                eatenCount: 0,
                 position: {x: -1, y: -1},
                 size: 80, eatingSize: 200,
                 color: {red: 128, green: 128, blue: 128, alpha: 1},
@@ -122,6 +123,7 @@ class App extends React.Component {
             amoebaColor.blue += 0.3*(pointColor.blue - amoebaColor.blue);
         });
         amoeba.color = amoebaColor;
+        amoeba.eatenCount += points.length;
         return amoeba;
     }
     nextStep() {

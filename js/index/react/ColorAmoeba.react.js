@@ -24,6 +24,14 @@ class ColorAmoeba extends React.Component {
             point2: {x: center.x + cos*rotatedPoint2.x, y: center.y + cos*rotatedPoint2.y},
         };
     }
+    drawEatenCount(amoeba, opt_style) {
+        const ctx = this.context;
+        let tempFillStyle = ctx.fillStyle;
+        ctx.fillStyle = opt_style || '#fff';
+        let textWidth = ctx.measureText(amoeba.eatenCount).width;
+        ctx.fillText(amoeba.eatenCount, amoeba.position.x - 0.5*textWidth, amoeba.position.y + 8);
+        ctx.fillStyle = tempFillStyle;
+    }
     drawTentacle(centerA, radiusA, centerB, radiusB, opt_style) {
         const ctx = this.context;
         let aPoints = this.getTangentPoints(centerA, radiusA, centerB);
@@ -93,6 +101,7 @@ class ColorAmoeba extends React.Component {
             + ')';
             this.drawCircle(point.position, point.size, fillStyle);
         });
+        this.drawEatenCount(amoeba);
     }
     componentDidMount() {
         let antialiasingFactor = this.antialiasingFactor;
@@ -102,6 +111,7 @@ class ColorAmoeba extends React.Component {
         this.context.canvas.width = antialiasingFactor*canvas.clientWidth;
         this.context.canvas.height = antialiasingFactor*canvas.clientHeight;
         this.context.translate(0.5, 0.5);
+        this.context.font = "32px Helvetica Neue,Helvetica,Arial,sans-serif";
         this.drawProps(this.props);
     }
     componentWillReceiveProps(nextProps) { this.drawProps(nextProps); }
