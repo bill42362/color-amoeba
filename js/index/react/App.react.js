@@ -10,6 +10,7 @@ class App extends React.Component {
         super(props);
         this.staticStrings = { };
         this.state = {
+            startFeeding: false,
             points: [], pullingPoints: [],
             amoeba: {
                 position: {x: -1, y: -1},
@@ -28,12 +29,26 @@ class App extends React.Component {
         this.timeloop = this.timeloop.bind(this);
         this.nextStep = this.nextStep.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
+        this.onMouseUp = this.onMouseUp.bind(this);
+    }
+    onMouseUp() {
+        let mouseState = this.refs.mouseTracker.state;
+        if(mouseState.key.left !== mouseState.prev.key.left) {
+            if(this.state.startFeeding) { this.setState({startFeeding: false}); }
+            else {
+                let amoeba = this.state.amoeba;
+                let mouseAxis = {x: mouseState.axis.x*2, y: mouseState.axis.y*2};
+                if(amoeba.size > Core.getDistance(amoeba.position, mouseAxis)) {
+                    this.setState({startFeeding: true});
+                }
+            }
+        }
     }
     onMouseMove() {
         let mouseState = this.refs.mouseTracker.state;
         let mouseAxis = mouseState.axis;
         let amoeba = this.state.amoeba;
-        amoeba.position = {x: mouseAxis.x*2, y: mouseAxis.y*2};
+        if(this.state.startFeeding) { amoeba.position = {x: mouseAxis.x*2, y: mouseAxis.y*2}; }
         this.setState({mousePosition: mouseState.axis, amoeba: amoeba, lastUpdateTimestamp: Date.now()});
         this.nextStep();
     }
@@ -157,7 +172,12 @@ class App extends React.Component {
         let timeToLastUpdate = now - this.state.lastUpdateTimestamp;
         if(maxTimeToLastUpdate < timeToLastUpdate) { this.nextStep(); }
     }
-    componentDidMount() { window.setInterval(this.timeloop, 10); }
+    componentDidMount() {
+        window.setInterval(this.timeloop, 10);
+        let amoeba = this.state.amoeba;
+        amoeba.position = {x: this.refs.base.clientWidth, y: this.refs.base.clientHeight};
+        this.setState({amoeba: amoeba});
+    }
     componentWillUnmount() { }
     render() {
         let state = this.state;
@@ -170,6 +190,7 @@ class App extends React.Component {
             <MouseTracker
                 ref='mouseTracker'
                 onMouseMove={this.onMouseMove}
+                onMouseUp={this.onMouseUp}
             />
         </div>;
     }

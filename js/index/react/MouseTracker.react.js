@@ -10,10 +10,13 @@ class MouseTracker extends React.Component {
             axis: {x: 0, y: 0},
             move: {x: 0, y: 0},
             wheel: null,
-            key: {left: 0, middle: 0, right: 0},
+            key: {left: false, middle: false, right: false},
             callBackFunctions: [],
         };
         this.onMouseMove = this.onMouseMove.bind(this);
+        this.onMouseUp = this.onMouseUp.bind(this);
+        this.onMouseDown = this.onMouseDown.bind(this);
+        this.onContextMenu = this.onContextMenu.bind(this);
         // Operations usually carried out in componentWillMount go here
     }
     onMouseMove(e) {
@@ -33,14 +36,38 @@ class MouseTracker extends React.Component {
         state.prev = this.getPrevState();
         this.setState(state);
     }
+    onContextMenu(e) { e.preventDefault(); return false; }
+    onMouseDown(e) {
+        e.preventDefault();
+        const state = this.state;
+        state.prev = this.getPrevState();
+        if(0 === e.button) { state.key.left = true; }
+        if(1 === e.button) { state.key.middle = true; }
+        if(2 === e.button) { state.key.right = true; }
+        let callBackFunctions = [];
+        if(this.props.onMouseDown) { callBackFunctions.push(this.props.onMouseDown); }
+        state.callBackFunctions = callBackFunctions;
+        this.setState(state);
+    }
+    onMouseUp(e) {
+        e.preventDefault();
+        const state = this.state;
+        state.prev = this.getPrevState();
+        if(0 === e.button) { state.key.left = false; }
+        if(1 === e.button) { state.key.middle = false; }
+        if(2 === e.button) { state.key.right = false; }
+        let callBackFunctions = [];
+        if(this.props.onMouseUp) { callBackFunctions.push(this.props.onMouseUp); }
+        state.callBackFunctions = callBackFunctions;
+        this.setState(state);
+    }
     getPrevState() {
         const s = this.state;
         return {
             axis: {x: s.axis.x, y: s.axis.y},
             move: {x: s.move.x, y: s.move.y},
             wheel: s.wheel,
-            key: {left: s.key.left, middle: s.key.middle, right: s.key.right}
-        };
+            key: {left: s.key.left, middle: s.key.middle, right: s.key.right} };
     }
     componentDidUpdate(prevProps, prevState) {
         var callBackFunctions = this.state.callBackFunctions.concat();
@@ -56,6 +83,9 @@ class MouseTracker extends React.Component {
         return <div
             ref='div' className='mouse-tracker'
             onMouseMove={this.onMouseMove}
+            onMouseUp={this.onMouseUp}
+            onMouseDown={this.onMouseDown}
+            onContextMenu={this.onContextMenu}
         ></div>;
     }
 }
