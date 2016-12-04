@@ -10,7 +10,7 @@ class App extends React.Component {
         super(props);
         this.staticStrings = { };
         this.state = {
-            startFeeding: false,
+            startFeeding: false, amoebaHovering: false,
             points: [], pullingPoints: [],
             amoeba: {
                 position: {x: -1, y: -1},
@@ -35,21 +35,20 @@ class App extends React.Component {
         let mouseState = this.refs.mouseTracker.state;
         if(mouseState.key.left !== mouseState.prev.key.left) {
             if(this.state.startFeeding) { this.setState({startFeeding: false}); }
-            else {
-                let amoeba = this.state.amoeba;
-                let mouseAxis = {x: mouseState.axis.x*2, y: mouseState.axis.y*2};
-                if(amoeba.size > Core.getDistance(amoeba.position, mouseAxis)) {
-                    this.setState({startFeeding: true});
-                }
-            }
+            else if(this.state.amoebaHovering) { this.setState({startFeeding: true}); }
         }
     }
     onMouseMove() {
         let mouseState = this.refs.mouseTracker.state;
-        let mouseAxis = mouseState.axis;
+        let mouseAxis = {x: mouseState.axis.x*2, y: mouseState.axis.y*2};
         let amoeba = this.state.amoeba;
-        if(this.state.startFeeding) { amoeba.position = {x: mouseAxis.x*2, y: mouseAxis.y*2}; }
-        this.setState({mousePosition: mouseState.axis, amoeba: amoeba, lastUpdateTimestamp: Date.now()});
+        if(this.state.startFeeding) { amoeba.position = mouseAxis; }
+        let amoebaHovering = amoeba.size > Core.getDistance(amoeba.position, mouseAxis);
+        this.setState({
+            mousePosition: mouseState.axis,
+            amoeba: amoeba, amoebaHovering: amoebaHovering,
+            lastUpdateTimestamp: Date.now(),
+        });
         this.nextStep();
     }
     resizePoints(points = []) {
@@ -181,7 +180,10 @@ class App extends React.Component {
     componentWillUnmount() { }
     render() {
         let state = this.state;
-        return <div id='wrapper' ref='base'>
+        return <div
+            id='wrapper' className={ClassNames({'amoeba-hovering': this.state.amoebaHovering})}
+            ref='base'
+        >
             <ColorAmoeba
                 amoeba={this.state.amoeba}
                 points={this.state.points}
