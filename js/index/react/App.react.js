@@ -2,6 +2,7 @@
 'use strict'
 import React from 'react';
 import ClassNames from 'classnames';
+import GameSubject from './GameSubject.react.js';
 import ColorAmoeba from './ColorAmoeba.react.js';
 import MouseTracker from './MouseTracker.react.js';
 
@@ -12,6 +13,44 @@ class App extends React.Component {
         this.state = {
             startFeeding: false, amoebaHovering: false,
             points: [], pullingPoints: [],
+            gameSubjects: [
+                {
+                    color: {red: 240, green: 0, blue: 0, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: true, inProgress: true, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 255, green: 127, blue: 0, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: true, inProgress: false, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 255, green: 255, blue: 0, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: true, inProgress: false, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 0, green: 121, blue: 64, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: false, inProgress: false, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 65, green: 64, blue: 255, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: false, inProgress: false, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 160, green: 1, blue: 192, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: false, inProgress: false, transitionTime: Date.now(),
+                },
+            ],
             amoeba: {
                 eatenCount: 0,
                 position: {x: -1, y: -1},
@@ -140,6 +179,28 @@ class App extends React.Component {
         amoeba.eatenCount += points.length;
         return amoeba;
     }
+    isSubjectPassed(subject, color) {
+        return Math.abs(subject.color.red - color.red) < subject.colorOffset.red
+            && Math.abs(subject.color.green - color.green) < subject.colorOffset.green
+            && Math.abs(subject.color.blue - color.blue) < subject.colorOffset.blue
+            && Math.abs(subject.color.alpha - color.alpha) < subject.colorOffset.alpha
+    }
+    processGameSubjects(gameSubjects) {
+        let amoeba = this.state.amoeba;
+        gameSubjects.forEach((subject, index) => {
+            if(subject.inProgress) {
+                if(this.isSubjectPassed(subject, amoeba.color)) {
+                    subject.completeCount = amoeba.eatenCount;
+                    subject.completeColor = amoeba.color;
+                    subject.inProgress = false;
+                    subject.transitionTime = Date.now();
+                    gameSubjects[index + 1].inProgress = true;
+                    gameSubjects[index + 1].transitionTime = Date.now();
+                }
+            }
+        });
+        return gameSubjects;
+    }
     nextStep() {
         let state = this.state;
         let now = Date.now();
@@ -179,6 +240,7 @@ class App extends React.Component {
             pullingPoints: swallowResult.pullingPoints.concat(huntingResult.huntedPoints),
             lastUpdateTimestamp: now,
             lastBreedTimestamp: lastBreedTimestamp,
+            gameSubjects: this.processGameSubjects(state.gameSubjects),
         });
     }
     timeloop() {
@@ -206,6 +268,10 @@ class App extends React.Component {
                 amoeba={this.state.amoeba}
                 points={this.state.points}
                 pullingPoints={this.state.pullingPoints}
+            />
+            <GameSubject
+                amoeba={this.state.amoeba}
+                gameSubjects={this.state.gameSubjects}
             />
             <MouseTracker
                 ref='mouseTracker'
