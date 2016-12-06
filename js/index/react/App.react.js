@@ -17,14 +17,14 @@ class App extends React.Component {
                 {
                     color: {red: 240, green: 0, blue: 0, alpha: 1},
                     colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
-                    completeCount: 205, completeColor: {red: 205, green: 20, blue: 30, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
                     unlocked: true, inProgress: true, transitionTime: Date.now(),
                 },
                 {
                     color: {red: 255, green: 127, blue: 0, alpha: 1},
                     colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
-                    completeCount: 302, completeColor: undefined,
-                    unlocked: true, inProgress: true, transitionTime: Date.now(),
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: true, inProgress: false, transitionTime: Date.now(),
                 },
                 {
                     color: {red: 255, green: 255, blue: 0, alpha: 1},
@@ -167,6 +167,28 @@ class App extends React.Component {
         amoeba.eatenCount += points.length;
         return amoeba;
     }
+    isSubjectPassed(subject, color) {
+        return Math.abs(subject.color.red - color.red) < subject.colorOffset.red
+            && Math.abs(subject.color.green - color.green) < subject.colorOffset.green
+            && Math.abs(subject.color.blue - color.blue) < subject.colorOffset.blue
+            && Math.abs(subject.color.alpha - color.alpha) < subject.colorOffset.alpha
+    }
+    processGameSubjects(gameSubjects) {
+        let amoeba = this.state.amoeba;
+        gameSubjects.forEach((subject, index) => {
+            if(subject.inProgress) {
+                if(this.isSubjectPassed(subject, amoeba.color)) {
+                    subject.completeCount = amoeba.eatenCount;
+                    subject.completeColor = amoeba.color;
+                    subject.inProgress = false;
+                    subject.transitionTime = Date.now();
+                    gameSubjects[index + 1].inProgress = true;
+                    gameSubjects[index + 1].transitionTime = Date.now();
+                }
+            }
+        });
+        return gameSubjects;
+    }
     nextStep() {
         let state = this.state;
         let now = Date.now();
@@ -206,6 +228,7 @@ class App extends React.Component {
             pullingPoints: swallowResult.pullingPoints.concat(huntingResult.huntedPoints),
             lastUpdateTimestamp: now,
             lastBreedTimestamp: lastBreedTimestamp,
+            gameSubjects: this.processGameSubjects(state.gameSubjects),
         });
     }
     timeloop() {

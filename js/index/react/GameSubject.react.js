@@ -92,7 +92,7 @@ class GameSubject extends React.Component {
                     subjectRadius, ameobaColor
                 );
                 this.drawCompleteCount(
-                    subject.completeCount,
+                    amoeba.eatenCount,
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
                 );
                 this.context.globalAlpha = tempGlobalAlpha;
