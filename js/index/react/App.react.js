@@ -63,9 +63,10 @@ class App extends React.Component {
         };
         this.frequency = 60;
         this.maxPoints = 200;
-        this.breedTime = 500;
+        this.breedTime = 250;
         this.maxBreedTryingTime = 10;
         this.maxPullingTime = 1000;
+        this.pointLifeTime = 10000;
         this.timeloop = this.timeloop.bind(this);
         this.nextStep = this.nextStep.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
@@ -104,6 +105,10 @@ class App extends React.Component {
             lastUpdateTimestamp: Date.now(),
         });
         this.nextStep();
+    }
+    killExpiredPoints(points = []) {
+        let now = Date.now();
+        return points.filter(point => { return this.pointLifeTime > (now - point.birthTimestamp); });
     }
     resizePoints(points = []) {
         let now = Date.now();
@@ -206,7 +211,8 @@ class App extends React.Component {
         let now = Date.now();
         let timeStep = now - state.lastUpdateTimestamp;
         let resizedPoints = this.resizePoints(this.state.points);
-        let huntingResult = this.huntPoints(resizedPoints);
+        let survivedPoints = this.killExpiredPoints(resizedPoints);
+        let huntingResult = this.huntPoints(survivedPoints);
         let pullingPoints = this.resizePoints(this.pullPoints(this.state.pullingPoints));
         let swallowResult = this.swalloPullingPoints(pullingPoints);
         this.digestSwalloedPoints(swallowResult.swalloedPoints);
