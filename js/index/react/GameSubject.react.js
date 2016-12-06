@@ -11,13 +11,16 @@ class GameSubject extends React.Component {
         let canvas = this.canvas;
         this.context.clearRect(0, 0, canvas.width, canvas.height);
     }
-    drawCompleteCount(count, center, style = '#fff') {
+    drawText(text, center, style = '#fff', font = '32px Helvetica Neue,Helvetica,Arial,sans-serif') {
         const ctx = this.context;
         let tempFillStyle = ctx.fillStyle;
+        let tempFont = ctx.font;
         ctx.fillStyle = style;
-        let textWidth = ctx.measureText(count).width;
-        ctx.fillText(count, center.x - 0.5*textWidth, center.y + 8);
+        ctx.font = font;
+        let textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, center.x - 0.5*textWidth, center.y + 8);
         ctx.fillStyle = tempFillStyle;
+        ctx.font = tempFont;
     }
     drawCircle(center, radius = 4, style = '#888', width = 5, arcStartRatio = 0, arcStopRatio = 1) {
         const ctx = this.context;
@@ -74,7 +77,7 @@ class GameSubject extends React.Component {
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
                     subjectRadius, subjectColor, 5
                 );
-                this.drawCompleteCount(
+                this.drawText(
                     subject.completeCount,
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
                 );
@@ -91,9 +94,19 @@ class GameSubject extends React.Component {
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
                     subjectRadius, ameobaColor
                 );
-                this.drawCompleteCount(
+                this.drawText(
                     amoeba.eatenCount,
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
+                );
+                this.drawText(
+                    '('
+                        + Math.floor(amoeba.color.red)
+                        + ', ' + Math.floor(amoeba.color.green)
+                        + ', ' + Math.floor(amoeba.color.blue)
+                    + ')',
+                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 35 + 2*subjectRadius},
+                    undefined,
+                    "20px Helvetica Neue,Helvetica,Arial,sans-serif"
                 );
                 this.context.globalAlpha = tempGlobalAlpha;
                 // Draw dashed circle.
