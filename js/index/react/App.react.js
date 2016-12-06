@@ -2,6 +2,7 @@
 'use strict'
 import React from 'react';
 import ClassNames from 'classnames';
+import GameSubject from './GameSubject.react.js';
 import ColorAmoeba from './ColorAmoeba.react.js';
 import MouseTracker from './MouseTracker.react.js';
 
@@ -12,6 +13,32 @@ class App extends React.Component {
         this.state = {
             startFeeding: false, amoebaHovering: false,
             points: [], pullingPoints: [],
+            gameSubjects: [
+                {
+                    color: {red: 240, green: 0, blue: 0, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 205, completeColor: {red: 205, green: 20, blue: 30, alpha: 1},
+                    unlocked: true, inProgress: true, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 255, green: 127, blue: 0, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 302, completeColor: undefined,
+                    unlocked: true, inProgress: true, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 255, green: 255, blue: 0, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: true, inProgress: false, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 0, green: 121, blue: 64, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: false, inProgress: false, transitionTime: Date.now(),
+                },
+            ],
             amoeba: {
                 eatenCount: 0,
                 position: {x: -1, y: -1},
@@ -206,6 +233,10 @@ class App extends React.Component {
                 amoeba={this.state.amoeba}
                 points={this.state.points}
                 pullingPoints={this.state.pullingPoints}
+            />
+            <GameSubject
+                amoeba={this.state.amoeba}
+                gameSubjects={this.state.gameSubjects}
             />
             <MouseTracker
                 ref='mouseTracker'
