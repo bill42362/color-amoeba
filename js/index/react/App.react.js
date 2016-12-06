@@ -38,6 +38,18 @@ class App extends React.Component {
                     completeCount: 0, completeColor: undefined,
                     unlocked: false, inProgress: false, transitionTime: Date.now(),
                 },
+                {
+                    color: {red: 65, green: 64, blue: 255, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: false, inProgress: false, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 160, green: 1, blue: 192, alpha: 1},
+                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: false, inProgress: false, transitionTime: Date.now(),
+                },
             ],
             amoeba: {
                 eatenCount: 0,

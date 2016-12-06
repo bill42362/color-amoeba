@@ -52,7 +52,7 @@ class GameSubject extends React.Component {
         this.clearCanvas();
         let amoeba = this.props.amoeba;
         let subjects = this.props.gameSubjects;
-        let subjectRadius = Math.min(Math.max(this.canvas.clientWidth/6, 25), 80);
+        let subjectRadius = Math.min(Math.max(this.canvas.clientWidth/7, 25), 80);
         let now = Date.now();
         let maxTransitionTime = 1000;
         subjects.forEach((subject, index) => {
