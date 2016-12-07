@@ -5,12 +5,11 @@ class ColorAmoeba extends React.Component {
     constructor(props) {
         super(props);
         this.antialiasingFactor = 2;
+        this.ballStack = [];
         this.context = undefined;
-        this.drawCircle = this.drawCircle.bind(this);
     }
-    clearCanvas() {
-        let canvas = this.canvas;
-        this.context.clearRect(0, 0, canvas.width, canvas.height);
+    getStyleFromRGB({red = 0, green = 0, blue = 0}) {
+        return 'rgb(' + Math.floor(red) + ',' + Math.floor(green) + ',' + Math.floor(blue) + ')';
     }
     getTangentPoints(center, radius, point) {
         let distance = Core.getDistance(center, point);
@@ -55,16 +54,46 @@ class ColorAmoeba extends React.Component {
         ctx.fill();
         ctx.fillStyle = tempFillStyle;
     }
-    drawCircle(center, opt_radius, opt_style) {
+    pushBallStack(center, radius = 4, style = '#888', alpha = 1) {
+        this.ballStack.push({
+            moveTo: {x: center.x, y: center.y - radius},
+            arc: {centerX: center.x, centerY: center.y, radius: radius,},
+            fillStyle: style, globalAlpha: alpha
+        });
+    }
+    drawBallStack() {
         const ctx = this.context;
-        let radius = opt_radius || 4;
+        const PI2 = Math.PI*2;
+        let stack = this.ballStack.sort((a, b) => {
+            if(a.fillStyle > b.fillStyle) return 1; 
+            if(a.fillStyle < b.fillStyle) return -1; 
+            if(a.globalAlpha > b.globalAlpha) return 1; 
+            if(a.globalAlpha < b.globalAlpha) return -1; 
+        });
         let tempFillStyle = ctx.fillStyle;
-        ctx.fillStyle = opt_style || '#888';
+        let tempGlobalAlpha = ctx.globalAlpha;
         ctx.beginPath();
-            ctx.moveTo(center.x + radius, center.y);
-            ctx.arc(center.x, center.y, radius, 0, Math.PI*2, true);
+        stack.forEach(ball => {
+            let current = {
+                fillStyle: ctx.fillStyle,
+                globalAlpha: ctx.globalAlpha,
+            };
+            if(current.fillStyle !== ball.fillStyle || current.globalAlpha !== ball.globalAlpha) {
+                ctx.fill();
+                if(current.fillStyle !== ball.fillStyle) ctx.fillStyle = ball.fillStyle;
+                if(current.globalAlpha !== ball.globalAlpha) ctx.globalAlpha = ball.globalAlpha;
+                ctx.beginPath();
+            }
+            ctx.moveTo(ball.moveTo.x, ball.moveTo.y);
+            ctx.arc(
+                ball.arc.centerX, ball.arc.centerY, ball.arc.radius,
+                0, PI2, ball.arc.anticlockwise
+            );
+        });
         ctx.fill();
         ctx.fillStyle = tempFillStyle;
+        ctx.globalAlpha = tempGlobalAlpha;
+        this.ballStack = [];
     }
     drawProps(props) {
         this.clearCanvas();
@@ -74,16 +103,8 @@ class ColorAmoeba extends React.Component {
                 point.position.x, point.position.y,
                 amoeba.position.x, amoeba.position.y,
             );
-            let amoebaColor = 'rgb('
-                + Math.floor(amoeba.color.red) + ','
-                + Math.floor(amoeba.color.green) + ','
-                + Math.floor(amoeba.color.blue)
-            + ')';
-            let pointColor = 'rgb('
-                + Math.floor(point.color.red) + ','
-                + Math.floor(point.color.green) + ','
-                + Math.floor(point.color.blue)
-            + ')';
+            let amoebaColor = this.getStyleFromRGB(amoeba.color);
+            let pointColor = this.getStyleFromRGB(point.color);
             gradient.addColorStop(0.4, pointColor);
             gradient.addColorStop(0.6, amoebaColor);
             this.drawTentacle(
@@ -94,14 +115,14 @@ class ColorAmoeba extends React.Component {
         });
         let points = props.points.concat(amoeba).concat(props.pullingPoints);
         points.forEach(point => {
-            let fillStyle = 'rgb('
-                + Math.floor(point.color.red) + ','
-                + Math.floor(point.color.green) + ','
-                + Math.floor(point.color.blue)
-            + ')';
-            this.drawCircle(point.position, point.size, fillStyle);
+            this.pushBallStack(point.position, point.size, this.getStyleFromRGB(point.color));
         });
+        this.drawBallStack();
         this.drawEatenCount(amoeba);
+    }
+    clearCanvas() {
+        let canvas = this.canvas;
+        this.context.clearRect(0, 0, canvas.width, canvas.height);
     }
     componentDidMount() {
         let antialiasingFactor = this.antialiasingFactor;
@@ -115,10 +136,6 @@ class ColorAmoeba extends React.Component {
         this.drawProps(this.props);
     }
     componentWillReceiveProps(nextProps) { this.drawProps(nextProps); }
-    render() {
-        let props = this.props;
-        return <canvas className='color-amoeba' ref='canvas'>
-        </canvas>;
-    }
+    render() { return <canvas className='color-amoeba' ref='canvas'></canvas>; }
 }
 module.exports = ColorAmoeba;

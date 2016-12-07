@@ -5,11 +5,12 @@ class GameSubject extends React.Component {
     constructor(props) {
         super(props);
         this.antialiasingFactor = 2;
+        this.ballStack = [];
+        this.circleStack = [];
         this.context = undefined;
     }
-    clearCanvas() {
-        let canvas = this.canvas;
-        this.context.clearRect(0, 0, canvas.width, canvas.height);
+    getStyleFromRGB({red = 0, green = 0, blue = 0}) {
+        return 'rgb(' + Math.floor(red) + ',' + Math.floor(green) + ',' + Math.floor(blue) + ')';
     }
     drawText(text, center, style = '#fff', font = '32px Helvetica Neue,Helvetica,Arial,sans-serif') {
         const ctx = this.context;
@@ -22,31 +23,94 @@ class GameSubject extends React.Component {
         ctx.fillStyle = tempFillStyle;
         ctx.font = tempFont;
     }
-    drawCircle(center, radius = 4, style = '#888', width = 5, arcStartRatio = 0, arcStopRatio = 1) {
-        const ctx = this.context;
-        let tempStrokeStyle = ctx.strokeStyle;
-        let tempLineWidth = ctx.lineWidth;
-        ctx.strokeStyle = style;
-        ctx.lineWidth = width;
-        ctx.beginPath();
-            ctx.moveTo(center.x, center.y - radius);
-            ctx.arc(
-                center.x, center.y, radius,
-                (arcStartRatio - 0.25)*Math.PI*2, (arcStopRatio - 0.25)*Math.PI*2, false
-            );
-        ctx.stroke();
-        ctx.strokeStyle = tempStrokeStyle;
-        ctx.lineWidth = tempLineWidth;
+    pushCircleStack(center, radius = 4, style = '#888', width = 5, arcStartRatio = 0, arcStopRatio = 1, lineDash = []) {
+        this.circleStack.push({
+            moveTo: {x: center.x, y: center.y - radius},
+            arc: {
+                centerX: center.x, centerY: center.y, radius: radius,
+                startAngle: (arcStartRatio - 0.25)*Math.PI*2, endAngle: (arcStopRatio - 0.25)*Math.PI*2,
+                anticlockwise: false
+            },
+            strokeStyle: style, lineWidth: width, lineDash: lineDash
+        });
     }
-    drawBall(center, radius = 4, style = '#888') {
+    drawCircleStack() {
         const ctx = this.context;
-        let tempFillStyle = ctx.fillStyle;
-        ctx.fillStyle = style;
+        let stack = this.circleStack.sort((a, b) => {
+            if(a.strokeStyle > b.strokeStyle) return 1; 
+            if(a.strokeStyle < b.strokeStyle) return -1; 
+            if(a.lineWidth > b.lineWidth) return 1; 
+            if(a.lineWidth < b.lineWidth) return -1; 
+            if(a.lineDash > b.lineDash) return 1; 
+            if(a.lineDash < b.lineDash) return -1; 
+        });
         ctx.beginPath();
-            ctx.moveTo(center.x + radius, center.y);
-            ctx.arc(center.x, center.y, radius, 0, Math.PI*2, true);
+        stack.forEach(circle => {
+            let current = {
+                strokeStyle: ctx.strokeStyle,
+                lineWidth: ctx.lineWidth,
+                lineDash: ctx.getLineDash().toString()
+            };
+            if(
+                current.strokeStyle !== circle.strokeStyle
+                || current.lineWidth !== circle.lineWidth
+                || current.lineDash !== circle.lineDash.toString()
+            ) {
+                ctx.stroke();
+                if(current.strokeStyle !== circle.strokeStyle)  ctx.strokeStyle = circle.strokeStyle;
+                if(current.lineWidth !== circle.lineWidth)  ctx.lineWidth = circle.lineWidth;
+                if(current.lineDash !== circle.lineDash.toString())  ctx.setLineDash(circle.lineDash);
+                ctx.beginPath();
+            }
+            ctx.moveTo(circle.moveTo.x, circle.moveTo.y);
+            ctx.arc(
+                circle.arc.centerX, circle.arc.centerY, circle.arc.radius,
+                circle.arc.startAngle, circle.arc.endAngle, circle.arc.anticlockwise
+            );
+        });
+        ctx.stroke();
+        this.circleStack = [];
+    }
+    pushBallStack(center, radius = 4, style = '#888', alpha = 1) {
+        this.ballStack.push({
+            moveTo: {x: center.x, y: center.y - radius},
+            arc: {centerX: center.x, centerY: center.y, radius: radius,},
+            fillStyle: style, globalAlpha: alpha
+        });
+    }
+    drawBallStack() {
+        const ctx = this.context;
+        const PI2 = Math.PI*2;
+        let stack = this.ballStack.sort((a, b) => {
+            if(a.fillStyle > b.fillStyle) return 1; 
+            if(a.fillStyle < b.fillStyle) return -1; 
+            if(a.globalAlpha > b.globalAlpha) return 1; 
+            if(a.globalAlpha < b.globalAlpha) return -1; 
+        });
+        let tempFillStyle = ctx.fillStyle;
+        let tempGlobalAlpha = ctx.globalAlpha;
+        ctx.beginPath();
+        stack.forEach(ball => {
+            let current = {
+                fillStyle: ctx.fillStyle,
+                globalAlpha: ctx.globalAlpha,
+            };
+            if(current.fillStyle !== ball.fillStyle || current.globalAlpha !== ball.globalAlpha) {
+                ctx.fill();
+                if(current.fillStyle !== ball.fillStyle) ctx.fillStyle = ball.fillStyle;
+                if(current.globalAlpha !== ball.globalAlpha) ctx.globalAlpha = ball.globalAlpha;
+                ctx.beginPath();
+            }
+            ctx.moveTo(ball.moveTo.x, ball.moveTo.y);
+            ctx.arc(
+                ball.arc.centerX, ball.arc.centerY, ball.arc.radius,
+                0, PI2, ball.arc.anticlockwise
+            );
+        });
         ctx.fill();
         ctx.fillStyle = tempFillStyle;
+        ctx.globalAlpha = tempGlobalAlpha;
+        this.ballStack = [];
     }
     drawProps(props) {
         this.clearCanvas();
@@ -59,41 +123,58 @@ class GameSubject extends React.Component {
             let timestamp = subject.transitionTime;
             let transitionRatio = Math.min((now - subject.transitionTime)/maxTransitionTime, 1.0);
             if(subject.completeColor) {
-                let completeColor = 'rgb('
-                    + Math.floor(subject.completeColor.red) + ','
-                    + Math.floor(subject.completeColor.green) + ','
-                    + Math.floor(subject.completeColor.blue)
-                + ')';
-                this.drawBall(
+                // Draw amoeba color.
+                this.pushBallStack(
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
-                    subjectRadius, completeColor
+                    subjectRadius, this.getStyleFromRGB(subject.completeColor)
                 );
-                let subjectColor = 'rgb('
-                    + Math.floor((1 - transitionRatio)*subject.color.red + transitionRatio*255) + ','
-                    + Math.floor((1 - transitionRatio)*subject.color.green + transitionRatio*255) + ','
-                    + Math.floor((1 - transitionRatio)*subject.color.blue + transitionRatio*255)
-                + ')';
-                this.drawCircle(
+                // Draw subject circle.
+                let subjectColor = this.getStyleFromRGB({
+                    red: (1 - transitionRatio)*subject.color.red + transitionRatio*255,
+                    green: (1 - transitionRatio)*subject.color.green + transitionRatio*255,
+                    blue: (1 - transitionRatio)*subject.color.blue + transitionRatio*255,
+                });
+                this.pushCircleStack(
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
                     subjectRadius, subjectColor, 5
                 );
+            } else if(subject.inProgress) {
+                // Draw amoeba color.
+                this.pushBallStack(
+                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
+                    subjectRadius, this.getStyleFromRGB(amoeba.color), transitionRatio
+                );
+                // Draw dashed circle.
+                this.pushCircleStack(
+                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
+                    subjectRadius, '#888', 5, 0, 1, [15]
+                );
+                // Draw subject circle.
+                this.pushCircleStack(
+                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
+                    subjectRadius, this.getStyleFromRGB(subject.color), 5, 0, transitionRatio
+                );
+            } else {
+                // Draw dashed circle.
+                this.pushCircleStack(
+                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
+                    subjectRadius, '#888', 5, 0, 1, [15]
+                );
+            }
+        });
+        this.drawBallStack();
+        this.drawCircleStack();
+        subjects.forEach((subject, index) => {
+            let timestamp = subject.transitionTime;
+            let transitionRatio = Math.min((now - subject.transitionTime)/maxTransitionTime, 1.0);
+            if(subject.completeColor) {
                 this.drawText(
                     subject.completeCount,
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
                 );
             } else if(subject.inProgress) {
-                // Draw amoeba color.
                 let tempGlobalAlpha = this.context.globalAlpha;
                 this.context.globalAlpha = transitionRatio;
-                let ameobaColor = 'rgb('
-                    + Math.floor(amoeba.color.red) + ','
-                    + Math.floor(amoeba.color.green) + ','
-                    + Math.floor(amoeba.color.blue)
-                + ')';
-                this.drawBall(
-                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
-                    subjectRadius, ameobaColor
-                );
                 this.drawText(
                     amoeba.eatenCount,
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
@@ -109,37 +190,12 @@ class GameSubject extends React.Component {
                     "20px Helvetica Neue,Helvetica,Arial,sans-serif"
                 );
                 this.context.globalAlpha = tempGlobalAlpha;
-                // Draw dashed circle.
-                this.context.setLineDash([15]);
-                this.drawCircle(
-                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
-                    subjectRadius, '#888', 5
-                );
-                this.context.setLineDash([]);
-                // Draw subject circle.
-                let subjectColor = 'rgb('
-                    + Math.floor(subject.color.red) + ','
-                    + Math.floor(subject.color.green) + ','
-                    + Math.floor(subject.color.blue)
-                + ')';
-                this.drawCircle(
-                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
-                    subjectRadius, subjectColor, 5, 0, transitionRatio
-                );
-            } else {
-                let subjectColor = 'rgb('
-                    + Math.floor(subject.color.red) + ','
-                    + Math.floor(subject.color.green) + ','
-                    + Math.floor(subject.color.blue)
-                + ')';
-                this.context.setLineDash([15]);
-                this.drawCircle(
-                    {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
-                    subjectRadius, '#888', 5
-                );
-                this.context.setLineDash([]);
             }
         });
+    }
+    clearCanvas() {
+        let canvas = this.canvas;
+        this.context.clearRect(0, 0, canvas.width, canvas.height);
     }
     componentDidMount() {
         let antialiasingFactor = this.antialiasingFactor;
