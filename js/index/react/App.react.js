@@ -13,40 +13,42 @@ class App extends React.Component {
         this.state = {
             startFeeding: false, amoebaHovering: false,
             points: [], pullingPoints: [],
+            // Color:
+            // https://www.facebook.com/somekidding/photos/a.304991492899199.71173.114982431900107/1274572585941080/?type=1&theater
             gameSubjects: [
                 {
-                    color: {red: 240, green: 0, blue: 0, alpha: 1},
-                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    color: {red: 229, green: 40, blue: 47, alpha: 1},
+                    colorOffset: {red: 60, green: 60, blue: 60, alpha: 1},
                     completeCount: 0, completeColor: undefined,
                     unlocked: true, inProgress: true, transitionTime: Date.now(),
                 },
                 {
-                    color: {red: 255, green: 127, blue: 0, alpha: 1},
+                    color: {red: 240, green: 142, blue: 41, alpha: 1},
+                    colorOffset: {red: 50, green: 50, blue: 50, alpha: 1},
+                    completeCount: 0, completeColor: undefined,
+                    unlocked: true, inProgress: false, transitionTime: Date.now(),
+                },
+                {
+                    color: {red: 254, green: 238, blue: 64, alpha: 1},
                     colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
                     completeCount: 0, completeColor: undefined,
                     unlocked: true, inProgress: false, transitionTime: Date.now(),
                 },
                 {
-                    color: {red: 255, green: 255, blue: 0, alpha: 1},
-                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
-                    completeCount: 0, completeColor: undefined,
-                    unlocked: true, inProgress: false, transitionTime: Date.now(),
-                },
-                {
-                    color: {red: 0, green: 121, blue: 64, alpha: 1},
-                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    color: {red: 73, green: 174, blue: 64, alpha: 1},
+                    colorOffset: {red: 30, green: 30, blue: 30, alpha: 1},
                     completeCount: 0, completeColor: undefined,
                     unlocked: false, inProgress: false, transitionTime: Date.now(),
                 },
                 {
-                    color: {red: 65, green: 64, blue: 255, alpha: 1},
-                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    color: {red: 21, green: 87, blue: 165, alpha: 1},
+                    colorOffset: {red: 20, green: 20, blue: 20, alpha: 1},
                     completeCount: 0, completeColor: undefined,
                     unlocked: false, inProgress: false, transitionTime: Date.now(),
                 },
                 {
-                    color: {red: 160, green: 1, blue: 192, alpha: 1},
-                    colorOffset: {red: 40, green: 40, blue: 40, alpha: 1},
+                    color: {red: 118, green: 46, blue: 136, alpha: 1},
+                    colorOffset: {red: 10, green: 10, blue: 10, alpha: 1},
                     completeCount: 0, completeColor: undefined,
                     unlocked: false, inProgress: false, transitionTime: Date.now(),
                 },
@@ -196,7 +198,7 @@ class App extends React.Component {
             if(subject.inProgress) {
                 if(this.isSubjectPassed(subject, amoeba.color)) {
                     subject.completeCount = amoeba.eatenCount;
-                    subject.completeColor = amoeba.color;
+                    subject.completeColor = JSON.parse(JSON.stringify(amoeba.color));
                     subject.inProgress = false;
                     subject.transitionTime = Date.now();
                     gameSubjects[index + 1].inProgress = true;
