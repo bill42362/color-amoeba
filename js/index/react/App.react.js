@@ -54,7 +54,7 @@ class App extends React.Component {
                 },
             ],
             amoeba: {
-                eatenCount: 0,
+                eatenCount: 0, movedDistance: 0,
                 position: {x: -1, y: -1},
                 size: 80, eatingSize: 200,
                 color: {red: 128, green: 128, blue: 128, alpha: 1},
@@ -78,13 +78,15 @@ class App extends React.Component {
         this.onTouchMove = this.onTouchMove.bind(this);
     }
     onTouchMove(e) {
-        e.preventDefault();
         let mouseState = this.refs.mouseTracker.state;
         let mouseAxis = {x: e.nativeEvent.layerX*2, y: e.nativeEvent.layerY*2};
         let amoeba = this.state.amoeba;
-        let amoebaHovering = amoeba.size + 20 > Core.getDistance(amoeba.position, mouseAxis);
+        let mouseOffset = Core.getDistance(amoeba.position, mouseAxis);
+        let amoebaHovering = amoeba.size + 20 > mouseOffset;
         if(amoebaHovering) {
+            e.preventDefault();
             let now = Date.now();
+            amoeba.movedDistance += mouseOffset;
             amoeba.position = mouseAxis;
             this.setState({
                 mousePosition: mouseAxis, amoeba: amoeba,
@@ -106,12 +108,14 @@ class App extends React.Component {
         let mouseState = this.refs.mouseTracker.state;
         let mouseAxis = {x: mouseState.axis.x*2, y: mouseState.axis.y*2};
         let amoeba = this.state.amoeba;
+        let mouseOffset = Core.getDistance(amoeba.position, mouseAxis);
         let lastMoveTimestamp = this.state.lastMoveTimestamp;
         if(this.state.startFeeding) {
             amoeba.position = mouseAxis;
+            amoeba.movedDistance += mouseOffset;
             lastMoveTimestamp = now;
         }
-        let amoebaHovering = amoeba.size > Core.getDistance(amoeba.position, mouseAxis);
+        let amoebaHovering = amoeba.size > mouseOffset;
         this.setState({
             mousePosition: mouseState.axis,
             amoeba: amoeba, amoebaHovering: amoebaHovering,
@@ -280,6 +284,7 @@ class App extends React.Component {
         let amoeba = this.state.amoeba;
         amoeba.position = {x: this.refs.base.clientWidth, y: this.refs.base.clientHeight};
         this.setState({amoeba: amoeba});
+        window.navigator.standalone = true;
     }
     componentWillUnmount() { document.removeEventListener('scroll', this.onWindowScroll, false); }
     render() {

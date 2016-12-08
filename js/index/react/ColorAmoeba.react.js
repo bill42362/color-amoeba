@@ -23,6 +23,19 @@ class ColorAmoeba extends React.Component {
             point2: {x: center.x + cos*rotatedPoint2.x, y: center.y + cos*rotatedPoint2.y},
         };
     }
+    drawMovedDistance(amoeba, opt_style) {
+        const ctx = this.context;
+        let tempFillStyle = ctx.fillStyle;
+        ctx.fillStyle = opt_style || '#fff';
+        let movedDistance = Core.addNumberComma(Math.floor(amoeba.movedDistance));
+        let textWidth = ctx.measureText(movedDistance).width;
+        ctx.fillText(
+            movedDistance,
+            this.canvas.width - 20 - textWidth,
+            this.canvas.height - 20
+        );
+        ctx.fillStyle = tempFillStyle;
+    }
     drawEatenCount(amoeba, opt_style) {
         const ctx = this.context;
         let tempFillStyle = ctx.fillStyle;
@@ -119,6 +132,7 @@ class ColorAmoeba extends React.Component {
         });
         this.drawBallStack();
         this.drawEatenCount(amoeba);
+        this.drawMovedDistance(amoeba);
     }
     clearCanvas() {
         let canvas = this.canvas;

@@ -102,6 +102,16 @@ Core.newUuid = function() {
     });
 }
 
+Core.reverseDigitString = function(string) { return string.split('').reverse().join(''); }
+Core.addNumberComma = function(number) {
+    let intString = Math.floor(number) + '';
+    let reversedWithComma = Core.reverseDigitString(intString).split(/(\d{3})/).filter(n => n).join(',');
+    let result = Core.reverseDigitString(reversedWithComma);
+    let floatPart = (number + '').replace(/\d*\.?/, '');
+    if(floatPart) { result += '.' + floatPart; }
+    return result;
+}
+
 Core.getUrlSearches = function() {
     var result = {};
     var searches = window.location.search;
