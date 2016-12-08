@@ -198,7 +198,7 @@ class App extends React.Component {
             if(subject.inProgress) {
                 if(this.isSubjectPassed(subject, amoeba.color)) {
                     subject.completeCount = amoeba.eatenCount;
-                    subject.completeColor = amoeba.color;
+                    subject.completeColor = JSON.parse(JSON.stringify(amoeba.color));
                     subject.inProgress = false;
                     subject.transitionTime = Date.now();
                     gameSubjects[index + 1].inProgress = true;
