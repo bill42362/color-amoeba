@@ -123,7 +123,7 @@ class GameSubject extends React.Component {
             let timestamp = subject.transitionTime;
             let transitionRatio = Math.min((now - subject.transitionTime)/maxTransitionTime, 1.0);
             if(subject.completeColor) {
-                // Draw amoeba color.
+                // Draw completed color.
                 this.pushBallStack(
                     {x: 15 + subjectRadius + index*(15 + 2*subjectRadius), y: 15 + subjectRadius},
                     subjectRadius, this.getStyleFromRGB(subject.completeColor)
