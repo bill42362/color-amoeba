@@ -82,12 +82,16 @@ class App extends React.Component {
         let mouseState = this.refs.mouseTracker.state;
         let mouseAxis = {x: e.nativeEvent.layerX*2, y: e.nativeEvent.layerY*2};
         let amoeba = this.state.amoeba;
-        amoeba.position = mouseAxis;
-        this.setState({
-            mousePosition: mouseAxis, amoeba: amoeba,
-            lastUpdateTimestamp: Date.now(),
-        });
-        this.nextStep();
+        let amoebaHovering = amoeba.size + 20 > Core.getDistance(amoeba.position, mouseAxis);
+        if(amoebaHovering) {
+            let now = Date.now();
+            amoeba.position = mouseAxis;
+            this.setState({
+                mousePosition: mouseAxis, amoeba: amoeba,
+                lastUpdateTimestamp: now, lastMoveTimestamp: now,
+            });
+            this.nextStep();
+        }
         return false;
     }
     onMouseUp() {
