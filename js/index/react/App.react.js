@@ -11,7 +11,7 @@ class App extends React.Component {
         super(props);
         this.staticStrings = { };
         this.state = {
-            startFeeding: false, amoebaHovering: false,
+            startFeeding: false, amoebaHovering: false, isGameFinished: false,
             points: [], pullingPoints: [],
             // Color:
             // facebook.com/somekidding/photos/a.304991492899199.71173.114982431900107/1274572585941080
@@ -93,6 +93,14 @@ class App extends React.Component {
                 lastUpdateTimestamp: now, lastMoveTimestamp: now,
             });
             this.nextStep();
+        } else if(this.state.isGameFinished) {
+            e.preventDefault();
+            let points = this.state.points;
+            let newPoint = this.getNewPoint();
+            newPoint.position = mouseAxis;
+            points.push(newPoint);
+            this.setState({points: points});
+            this.nextStep();
         }
         return false;
     }
@@ -105,19 +113,25 @@ class App extends React.Component {
     }
     onMouseMove() {
         let now = Date.now();
+        let state = this.state;
         let mouseState = this.refs.mouseTracker.state;
         let mouseAxis = {x: mouseState.axis.x*2, y: mouseState.axis.y*2};
-        let amoeba = this.state.amoeba;
+        let amoeba = state.amoeba;
         let mouseOffset = Core.getDistance(amoeba.position, mouseAxis);
-        let lastMoveTimestamp = this.state.lastMoveTimestamp;
-        if(this.state.startFeeding) {
+        let lastMoveTimestamp = state.lastMoveTimestamp;
+        let points = state.points;
+        if(state.startFeeding) {
             amoeba.position = mouseAxis;
             amoeba.movedDistance += mouseOffset;
             lastMoveTimestamp = now;
+        } else if(state.isGameFinished) {
+            let newPoint = this.getNewPoint();
+            newPoint.position = mouseAxis;
+            points.push(newPoint);
         }
         let amoebaHovering = amoeba.size > mouseOffset;
         this.setState({
-            mousePosition: mouseState.axis,
+            mousePosition: mouseState.axis, points: points,
             amoeba: amoeba, amoebaHovering: amoebaHovering,
             lastUpdateTimestamp: now,
             lastMoveTimestamp: lastMoveTimestamp
@@ -237,7 +251,7 @@ class App extends React.Component {
         let points = huntingResult.freePoints;
         let lastBreedTimestamp = state.lastBreedTimestamp;
         let breedTryingTime = 0;
-        if(this.maxPoints > points.length && this.breedTime < (now - lastBreedTimestamp)) {
+        if(!state.isGameFinished && this.maxPoints > points.length && this.breedTime < (now - lastBreedTimestamp)) {
             let amoeba = this.state.amoeba;
             let newPoint = undefined;
             let shouldOpenMoveShild = now < state.lastMoveTimestamp + this.moveShild.time;
@@ -263,12 +277,13 @@ class App extends React.Component {
             if(newPoint) { points.push(newPoint); }
             lastBreedTimestamp = now;
         }
+        let gameSubjects = this.processGameSubjects(state.gameSubjects);
+        let isGameFinished = state.isGameFinished || !gameSubjects.filter(subject => !subject.completeColor)[0];
         this.setState({
             points: points,
             pullingPoints: swallowResult.pullingPoints.concat(huntingResult.huntedPoints),
-            lastUpdateTimestamp: now,
-            lastBreedTimestamp: lastBreedTimestamp,
-            gameSubjects: this.processGameSubjects(state.gameSubjects),
+            lastUpdateTimestamp: now, lastBreedTimestamp: lastBreedTimestamp,
+            gameSubjects: gameSubjects, isGameFinished: isGameFinished,
         });
     }
     timeloop() {
