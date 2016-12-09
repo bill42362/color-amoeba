@@ -11,7 +11,7 @@ class App extends React.Component {
         super(props);
         this.staticStrings = { };
         this.state = {
-            startFeeding: false, amoebaHovering: false,
+            startFeeding: false, amoebaHovering: false, isGameFinished: false,
             points: [], pullingPoints: [],
             // Color:
             // facebook.com/somekidding/photos/a.304991492899199.71173.114982431900107/1274572585941080
@@ -76,6 +76,44 @@ class App extends React.Component {
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onMouseUp = this.onMouseUp.bind(this);
         this.onTouchMove = this.onTouchMove.bind(this);
+        this.onBonusImageLoad = this.onBonusImageLoad.bind(this);
+
+        let finishBonusImage = new Image();
+        let bonusImageIndex = 1 + Math.floor(Math.random()*2);
+        finishBonusImage.src = '/img/finish-bonus-' + bonusImageIndex + '.png';
+        finishBonusImage.onload = this.onBonusImageLoad;
+    }
+    onBonusImageLoad(e) {
+        let image = e.target;
+        var canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        let context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, image.width, image.height);
+        this.bonusImage = image;
+        this.bonusImageCanvasContext = context;
+    }
+    getColorFromBonusImage(axis) {
+        let ctx = this.bonusImageCanvasContext;
+        let pixelData = ctx.getImageData(axis.x, axis.y, 1, 1).data;
+        return {red: pixelData[0], green: pixelData[1], blue: pixelData[2], alpha: pixelData[3]};
+    }
+    fitPointToBonusImage(axis, baseDimension, imageDimension) {
+        let imageToBaseRatio = this.imageToBaseRatio;
+        if(!imageToBaseRatio) {
+            let imageToBaseDimesion = {
+                x: imageDimension.x/baseDimension.x,
+                y: imageDimension.y/baseDimension.y,
+            };
+            imageToBaseRatio = Math.max(imageToBaseDimesion.x, imageToBaseDimesion.y, 1);
+            this.imageToBaseRatio = imageToBaseRatio;
+        }
+        let arrayFromBaseCenter = {x: axis.x - 0.5*baseDimension.x, y: axis.y - 0.5*baseDimension.y};
+        let pointOnImage = {
+            x: 0.5*imageDimension.x + arrayFromBaseCenter.x*imageToBaseRatio,
+            y: 0.5*imageDimension.y + arrayFromBaseCenter.y*imageToBaseRatio,
+        };
+        return pointOnImage;
     }
     onTouchMove(e) {
         let mouseState = this.refs.mouseTracker.state;
@@ -93,6 +131,22 @@ class App extends React.Component {
                 lastUpdateTimestamp: now, lastMoveTimestamp: now,
             });
             this.nextStep();
+        } else if(this.state.isGameFinished) {
+            e.preventDefault();
+            let points = this.state.points;
+            let newPoint = this.getNewPoint();
+            newPoint.position = mouseAxis;
+            let positionOnImage = this.fitPointToBonusImage(
+                newPoint.position, this.state.baseDimension,
+                {x: this.bonusImage.width, y: this.bonusImage.height},
+            );
+            let color = this.getColorFromBonusImage(positionOnImage);
+            if(20 < color.red || 20 < color.green || 20 < color.blue) {
+                newPoint.color = color;
+                points.push(newPoint);
+                this.setState({points: points});
+                this.nextStep();
+            }
         }
         return false;
     }
@@ -105,19 +159,33 @@ class App extends React.Component {
     }
     onMouseMove() {
         let now = Date.now();
+        let state = this.state;
         let mouseState = this.refs.mouseTracker.state;
         let mouseAxis = {x: mouseState.axis.x*2, y: mouseState.axis.y*2};
-        let amoeba = this.state.amoeba;
+        let amoeba = state.amoeba;
         let mouseOffset = Core.getDistance(amoeba.position, mouseAxis);
-        let lastMoveTimestamp = this.state.lastMoveTimestamp;
-        if(this.state.startFeeding) {
+        let lastMoveTimestamp = state.lastMoveTimestamp;
+        let points = state.points;
+        if(state.startFeeding) {
             amoeba.position = mouseAxis;
             amoeba.movedDistance += mouseOffset;
             lastMoveTimestamp = now;
+        } else if(state.isGameFinished) {
+            let newPoint = this.getNewPoint();
+            newPoint.position = mouseAxis;
+            let positionOnImage = this.fitPointToBonusImage(
+                newPoint.position, state.baseDimension,
+                {x: this.bonusImage.width, y: this.bonusImage.height},
+            );
+            let color = this.getColorFromBonusImage(positionOnImage);
+            if(20 < color.red || 20 < color.green || 20 < color.blue) {
+                newPoint.color = color;
+                points.push(newPoint);
+            }
         }
         let amoebaHovering = amoeba.size > mouseOffset;
         this.setState({
-            mousePosition: mouseState.axis,
+            mousePosition: mouseState.axis, points: points,
             amoeba: amoeba, amoebaHovering: amoebaHovering,
             lastUpdateTimestamp: now,
             lastMoveTimestamp: lastMoveTimestamp
@@ -126,13 +194,16 @@ class App extends React.Component {
     }
     killExpiredPoints(points = []) {
         let now = Date.now();
-        return points.filter(point => { return this.pointLifeTime > (now - point.birthTimestamp); });
+        return points.filter(point => { return point.lifeTime > (now - point.birthTimestamp); });
     }
     resizePoints(points = []) {
         let now = Date.now();
         return points.map(point => {
-            let age = Math.min(now - point.birthTimestamp, 1000)/1000;
-            if(1 > age) { point.size = 10 + 10*Math.sin(age*Math.PI); }
+            let age = (now - point.birthTimestamp)/1000;
+            let blinkCycle = Math.max(Math.min(age, 1), 0);
+            if(1 > blinkCycle && 0 < blinkCycle) {
+                point.size = 10 + 10*Math.sin(blinkCycle*Math.PI);
+            }
             else { point.size = 10; }
             return point;
         });
@@ -162,7 +233,7 @@ class App extends React.Component {
                 blue: Math.floor(Math.random()*255),
                 alpha: 1,
             },
-            birthTimestamp: Date.now(),
+            birthTimestamp: Date.now(), lifeTime: this.pointLifeTime,
         };
     }
     pullPoints(points = []) {
@@ -237,7 +308,7 @@ class App extends React.Component {
         let points = huntingResult.freePoints;
         let lastBreedTimestamp = state.lastBreedTimestamp;
         let breedTryingTime = 0;
-        if(this.maxPoints > points.length && this.breedTime < (now - lastBreedTimestamp)) {
+        if(!state.isGameFinished && this.maxPoints > points.length && this.breedTime < (now - lastBreedTimestamp)) {
             let amoeba = this.state.amoeba;
             let newPoint = undefined;
             let shouldOpenMoveShild = now < state.lastMoveTimestamp + this.moveShild.time;
@@ -262,13 +333,31 @@ class App extends React.Component {
             }
             if(newPoint) { points.push(newPoint); }
             lastBreedTimestamp = now;
+        } else if(state.isGameFinished && this.breedTime/2 < (now - lastBreedTimestamp)) {
+            let newPoint = undefined;
+            while(!newPoint) {
+                newPoint = this.getNewPoint();
+                let positionOnImage = this.fitPointToBonusImage(
+                    newPoint.position, state.baseDimension,
+                    {x: this.bonusImage.width, y: this.bonusImage.height},
+                );
+                let color = this.getColorFromBonusImage(positionOnImage);
+                newPoint.color = color;
+                if(20 > color.red && 20 > color.green && 20 > color.blue) {
+                    newPoint = undefined;
+                }
+            }
+            newPoint.lifeTime = 100000;
+            points.push(newPoint);
+            lastBreedTimestamp = now;
         }
+        let gameSubjects = this.processGameSubjects(state.gameSubjects);
+        let isGameFinished = state.isGameFinished || !gameSubjects.filter(subject => !subject.completeColor)[0];
         this.setState({
             points: points,
             pullingPoints: swallowResult.pullingPoints.concat(huntingResult.huntedPoints),
-            lastUpdateTimestamp: now,
-            lastBreedTimestamp: lastBreedTimestamp,
-            gameSubjects: this.processGameSubjects(state.gameSubjects),
+            lastUpdateTimestamp: now, lastBreedTimestamp: lastBreedTimestamp,
+            gameSubjects: gameSubjects, isGameFinished: isGameFinished,
         });
     }
     timeloop() {
@@ -281,9 +370,10 @@ class App extends React.Component {
     componentDidMount() {
         window.setInterval(this.timeloop, 10);
         document.addEventListener('scroll', this.onWindowScroll, false);
+        let baseDimension = {x: 2*this.refs.base.clientWidth, y: 2*this.refs.base.clientHeight};
         let amoeba = this.state.amoeba;
-        amoeba.position = {x: this.refs.base.clientWidth, y: this.refs.base.clientHeight};
-        this.setState({amoeba: amoeba});
+        amoeba.position = {x: 0.5*baseDimension.x, y: 0.5*baseDimension.y};
+        this.setState({amoeba: amoeba, baseDimension: baseDimension});
         window.navigator.standalone = true;
     }
     componentWillUnmount() { document.removeEventListener('scroll', this.onWindowScroll, false); }
