@@ -15,6 +15,17 @@ div#app-root {
         height: 100vh;
         background-color: @themeBackground;
         &.amoeba-hovering { cursor: pointer; }
+        div.finish-bonus-credit {
+            position: absolute;
+            left: 0.5em; bottom: 0.5em;
+            a {
+                font-size: 16px;
+                color: white;
+                text-decoration: none;
+                transition: color .5s ease;
+                &:hover { color: skyblue; }
+            }
+        }
     }
 }
 }

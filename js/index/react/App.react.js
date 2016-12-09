@@ -398,6 +398,9 @@ class App extends React.Component {
                 onMouseUp={this.onMouseUp}
                 onTouchMove={this.onTouchMove}
             />
+            {this.state.isGameFinished && <div className='finish-bonus-credit'>
+                <a href='//www.facebook.com/somekidding/'>Picture@聶永真</a>
+            </div>}
         </div>;
     }
 }
