@@ -11,7 +11,7 @@ class App extends React.Component {
         super(props);
         this.staticStrings = { };
         this.state = {
-            startFeeding: false, amoebaHovering: false, isGameFinished: true,
+            startFeeding: false, amoebaHovering: false, isGameFinished: false,
             points: [], pullingPoints: [],
             // Color:
             // facebook.com/somekidding/photos/a.304991492899199.71173.114982431900107/1274572585941080
@@ -79,7 +79,8 @@ class App extends React.Component {
         this.onBonusImageLoad = this.onBonusImageLoad.bind(this);
 
         let finishBonusImage = new Image();
-        finishBonusImage.src = '/img/finish-bonus-1.png';
+        let bonusImageIndex = 1 + Math.floor(Math.random()*2);
+        finishBonusImage.src = '/img/finish-bonus-' + bonusImageIndex + '.png';
         finishBonusImage.onload = this.onBonusImageLoad;
     }
     onBonusImageLoad(e) {
@@ -98,10 +99,19 @@ class App extends React.Component {
         return {red: pixelData[0], green: pixelData[1], blue: pixelData[2], alpha: pixelData[3]};
     }
     fitPointToBonusImage(axis, baseDimension, imageDimension) {
+        let imageToBaseRatio = this.imageToBaseRatio;
+        if(!imageToBaseRatio) {
+            let imageToBaseDimesion = {
+                x: imageDimension.x/baseDimension.x,
+                y: imageDimension.y/baseDimension.y,
+            };
+            imageToBaseRatio = Math.max(imageToBaseDimesion.x, imageToBaseDimesion.y, 1);
+            this.imageToBaseRatio = imageToBaseRatio;
+        }
         let arrayFromBaseCenter = {x: axis.x - 0.5*baseDimension.x, y: axis.y - 0.5*baseDimension.y};
         let pointOnImage = {
-            x: 0.5*imageDimension.x + arrayFromBaseCenter.x,
-            y: 0.5*imageDimension.y + arrayFromBaseCenter.y,
+            x: 0.5*imageDimension.x + arrayFromBaseCenter.x*imageToBaseRatio,
+            y: 0.5*imageDimension.y + arrayFromBaseCenter.y*imageToBaseRatio,
         };
         return pointOnImage;
     }
@@ -127,8 +137,7 @@ class App extends React.Component {
             let newPoint = this.getNewPoint();
             newPoint.position = mouseAxis;
             let positionOnImage = this.fitPointToBonusImage(
-                newPoint.position,
-                this.state.baseDimension,
+                newPoint.position, this.state.baseDimension,
                 {x: this.bonusImage.width, y: this.bonusImage.height},
             );
             let color = this.getColorFromBonusImage(positionOnImage);
