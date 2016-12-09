@@ -11,7 +11,7 @@ class App extends React.Component {
         super(props);
         this.staticStrings = { };
         this.state = {
-            startFeeding: false, amoebaHovering: false, isGameFinished: false,
+            startFeeding: false, amoebaHovering: false, isGameFinished: true,
             points: [], pullingPoints: [],
             // Color:
             // facebook.com/somekidding/photos/a.304991492899199.71173.114982431900107/1274572585941080
@@ -76,6 +76,25 @@ class App extends React.Component {
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onMouseUp = this.onMouseUp.bind(this);
         this.onTouchMove = this.onTouchMove.bind(this);
+        this.onBonusImageLoad = this.onBonusImageLoad.bind(this);
+
+        let finishBonusImage = new Image();
+        finishBonusImage.src = '/img/finish-bonus.jpg';
+        finishBonusImage.onload = this.onBonusImageLoad;
+    }
+    onBonusImageLoad(e) {
+        let image = e.target;
+        var canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        let context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, image.width, image.height);
+        this.bonusImageCanvasContext = context;
+    }
+    getColorFromBonusImage(axis) {
+        let ctx = this.bonusImageCanvasContext;
+        let pixelData = ctx.getImageData(axis.x, axis.y, 1, 1).data;
+        return {red: pixelData[0], green: pixelData[1], blue: pixelData[2], alpha: pixelData[3]};
     }
     onTouchMove(e) {
         let mouseState = this.refs.mouseTracker.state;
@@ -98,9 +117,13 @@ class App extends React.Component {
             let points = this.state.points;
             let newPoint = this.getNewPoint();
             newPoint.position = mouseAxis;
-            points.push(newPoint);
-            this.setState({points: points});
-            this.nextStep();
+            let color = this.getColorFromBonusImage(mouseAxis);
+            if(20 < color.red || 20 < color.green || 20 < color.blue) {
+                newPoint.color = color;
+                points.push(newPoint);
+                this.setState({points: points});
+                this.nextStep();
+            }
         }
         return false;
     }
@@ -127,7 +150,11 @@ class App extends React.Component {
         } else if(state.isGameFinished) {
             let newPoint = this.getNewPoint();
             newPoint.position = mouseAxis;
-            points.push(newPoint);
+            let color = this.getColorFromBonusImage(mouseAxis);
+            if(20 < color.red || 20 < color.green || 20 < color.blue) {
+                newPoint.color = color;
+                points.push(newPoint);
+            }
         }
         let amoebaHovering = amoeba.size > mouseOffset;
         this.setState({
@@ -140,13 +167,16 @@ class App extends React.Component {
     }
     killExpiredPoints(points = []) {
         let now = Date.now();
-        return points.filter(point => { return this.pointLifeTime > (now - point.birthTimestamp); });
+        return points.filter(point => { return point.lifeTime > (now - point.birthTimestamp); });
     }
     resizePoints(points = []) {
         let now = Date.now();
         return points.map(point => {
-            let age = Math.min(now - point.birthTimestamp, 1000)/1000;
-            if(1 > age) { point.size = 10 + 10*Math.sin(age*Math.PI); }
+            let age = (now - point.birthTimestamp)/1000;
+            let blinkCycle = Math.max(Math.min(age, 1), 0);
+            if(1 > blinkCycle && 0 < blinkCycle) {
+                point.size = 10 + 10*Math.sin(blinkCycle*Math.PI);
+            }
             else { point.size = 10; }
             return point;
         });
@@ -176,7 +206,7 @@ class App extends React.Component {
                 blue: Math.floor(Math.random()*255),
                 alpha: 1,
             },
-            birthTimestamp: Date.now(),
+            birthTimestamp: Date.now(), lifeTime: this.pointLifeTime,
         };
     }
     pullPoints(points = []) {
@@ -275,6 +305,19 @@ class App extends React.Component {
                 ++breedTryingTime;
             }
             if(newPoint) { points.push(newPoint); }
+            lastBreedTimestamp = now;
+        } else if(state.isGameFinished && this.breedTime/2 < (now - lastBreedTimestamp)) {
+            let newPoint = undefined;
+            while(!newPoint) {
+                newPoint = this.getNewPoint();
+                let color = this.getColorFromBonusImage(newPoint.position);
+                newPoint.color = color;
+                if(20 > color.red && 20 > color.green && 20 > color.blue) {
+                    newPoint = undefined;
+                }
+            }
+            newPoint.lifeTime = 100000;
+            points.push(newPoint);
             lastBreedTimestamp = now;
         }
         let gameSubjects = this.processGameSubjects(state.gameSubjects);
