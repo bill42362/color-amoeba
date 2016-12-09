@@ -79,7 +79,7 @@ class App extends React.Component {
         this.onBonusImageLoad = this.onBonusImageLoad.bind(this);
 
         let finishBonusImage = new Image();
-        finishBonusImage.src = '/img/finish-bonus.jpg';
+        finishBonusImage.src = '/img/finish-bonus-1.png';
         finishBonusImage.onload = this.onBonusImageLoad;
     }
     onBonusImageLoad(e) {
@@ -89,12 +89,21 @@ class App extends React.Component {
         canvas.height = image.height;
         let context = canvas.getContext('2d');
         context.drawImage(image, 0, 0, image.width, image.height);
+        this.bonusImage = image;
         this.bonusImageCanvasContext = context;
     }
     getColorFromBonusImage(axis) {
         let ctx = this.bonusImageCanvasContext;
         let pixelData = ctx.getImageData(axis.x, axis.y, 1, 1).data;
         return {red: pixelData[0], green: pixelData[1], blue: pixelData[2], alpha: pixelData[3]};
+    }
+    fitPointToBonusImage(axis, baseDimension, imageDimension) {
+        let arrayFromBaseCenter = {x: axis.x - 0.5*baseDimension.x, y: axis.y - 0.5*baseDimension.y};
+        let pointOnImage = {
+            x: 0.5*imageDimension.x + arrayFromBaseCenter.x,
+            y: 0.5*imageDimension.y + arrayFromBaseCenter.y,
+        };
+        return pointOnImage;
     }
     onTouchMove(e) {
         let mouseState = this.refs.mouseTracker.state;
@@ -117,7 +126,12 @@ class App extends React.Component {
             let points = this.state.points;
             let newPoint = this.getNewPoint();
             newPoint.position = mouseAxis;
-            let color = this.getColorFromBonusImage(mouseAxis);
+            let positionOnImage = this.fitPointToBonusImage(
+                newPoint.position,
+                this.state.baseDimension,
+                {x: this.bonusImage.width, y: this.bonusImage.height},
+            );
+            let color = this.getColorFromBonusImage(positionOnImage);
             if(20 < color.red || 20 < color.green || 20 < color.blue) {
                 newPoint.color = color;
                 points.push(newPoint);
@@ -150,7 +164,11 @@ class App extends React.Component {
         } else if(state.isGameFinished) {
             let newPoint = this.getNewPoint();
             newPoint.position = mouseAxis;
-            let color = this.getColorFromBonusImage(mouseAxis);
+            let positionOnImage = this.fitPointToBonusImage(
+                newPoint.position, state.baseDimension,
+                {x: this.bonusImage.width, y: this.bonusImage.height},
+            );
+            let color = this.getColorFromBonusImage(positionOnImage);
             if(20 < color.red || 20 < color.green || 20 < color.blue) {
                 newPoint.color = color;
                 points.push(newPoint);
@@ -310,7 +328,11 @@ class App extends React.Component {
             let newPoint = undefined;
             while(!newPoint) {
                 newPoint = this.getNewPoint();
-                let color = this.getColorFromBonusImage(newPoint.position);
+                let positionOnImage = this.fitPointToBonusImage(
+                    newPoint.position, state.baseDimension,
+                    {x: this.bonusImage.width, y: this.bonusImage.height},
+                );
+                let color = this.getColorFromBonusImage(positionOnImage);
                 newPoint.color = color;
                 if(20 > color.red && 20 > color.green && 20 > color.blue) {
                     newPoint = undefined;
@@ -339,9 +361,10 @@ class App extends React.Component {
     componentDidMount() {
         window.setInterval(this.timeloop, 10);
         document.addEventListener('scroll', this.onWindowScroll, false);
+        let baseDimension = {x: 2*this.refs.base.clientWidth, y: 2*this.refs.base.clientHeight};
         let amoeba = this.state.amoeba;
-        amoeba.position = {x: this.refs.base.clientWidth, y: this.refs.base.clientHeight};
-        this.setState({amoeba: amoeba});
+        amoeba.position = {x: 0.5*baseDimension.x, y: 0.5*baseDimension.y};
+        this.setState({amoeba: amoeba, baseDimension: baseDimension});
         window.navigator.standalone = true;
     }
     componentWillUnmount() { document.removeEventListener('scroll', this.onWindowScroll, false); }
